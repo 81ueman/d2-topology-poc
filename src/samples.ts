@@ -221,8 +221,11 @@ leaf2 -> rack2.srv4
  * instead of collapsing into one long column.
  * Default: 12 racks x 8 hosts = ~125 shapes, ~110 edges (3-digit scale test).
  */
-export function generateLargeSource(racks = 12, hostsPerRack = 8): string {
-  const columns = 4;
+export function generateLargeSource(
+  racks = 12,
+  hostsPerRack = 8,
+  columns = 4,
+): string {
   const rows = Math.ceil(racks / columns);
   const lines: string[] = [];
   lines.push(`# 生成トポロジ: ${racks} ラック x ${hostsPerRack} ホスト (${rows} x ${columns} grid)`);
@@ -262,6 +265,11 @@ export const SAMPLES: Sample[] = [
   { id: "hybrid", label: "ハイブリッド", source: HYBRID },
   { id: "clos", label: "Spine-Leaf", source: CLOS },
   { id: "large", label: "生成 123ノード", source: generateLargeSource() },
+  {
+    id: "large1000",
+    label: "生成 1000ノード",
+    source: generateLargeSource(40, 25, 4),
+  },
 ];
 
 export const DEFAULT_SOURCE = SMALL;
