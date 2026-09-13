@@ -1,5 +1,7 @@
 # d2-topology-poc
 
+▶ **デモ: <https://81ueman.github.io/d2-topology-poc/>**
+
 D2 で書いたトポロジを、**ブラウザ内 WASM でコンパイル**し、その結果（座標・接続）を
 **React Flow** で描画する PoC。「D2 の画像を貼る」のではなく、**D2 を記法＋レイアウト
 エンジンとして使い、描画・操作は Web 側が持つ**方式（前段の検討でいう B 案）の実証。
@@ -13,6 +15,12 @@ npm run build    # 型チェック + 本番ビルド
 ```
 
 初回は D2 エンジン（WASM、バンドル約 11.9MB / gzip 約 8.7MB）の読み込みが入る。
+
+## デプロイ
+
+`main` に push すると GitHub Actions（`.github/workflows/deploy.yml`）が
+`dist/` をビルドして GitHub Pages に公開する。手動実行は Actions の
+`workflow_dispatch` から。
 
 ## できること
 
