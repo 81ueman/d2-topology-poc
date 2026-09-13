@@ -15,7 +15,7 @@ import D2Node from "./D2Node";
 import type { D2NodeData, D2NodeType } from "./D2Node";
 import D2Edge from "./D2Edge";
 import type { RoutePoint } from "./D2Edge";
-import { MovedNodesContext } from "./context";
+import { EdgeRenderContext } from "./context";
 import { connectionLabel, isContainerId } from "../d2/model";
 import { minimapColor, shapeKind } from "../d2/theme";
 
@@ -65,12 +65,14 @@ function buildEdges(diagram: Diagram, nodeIds: Set<string>): Edge[] {
 
 interface Props {
   diagram: Diagram | null;
+  straightEdges: boolean;
   onSelectNode: (node: D2NodeType | null) => void;
   onSelectEdge: (edge: Edge | null) => void;
 }
 
 export default function TopologyFlow({
   diagram,
+  straightEdges,
   onSelectNode,
   onSelectEdge,
 }: Props) {
@@ -108,7 +110,7 @@ export default function TopologyFlow({
   );
 
   return (
-    <MovedNodesContext.Provider value={moved}>
+    <EdgeRenderContext.Provider value={{ straightEdges, moved }}>
       <ReactFlow<D2NodeType, Edge>
         nodes={nodes}
         edges={edges}
@@ -146,6 +148,6 @@ export default function TopologyFlow({
           }}
         />
       </ReactFlow>
-    </MovedNodesContext.Provider>
+    </EdgeRenderContext.Provider>
   );
 }

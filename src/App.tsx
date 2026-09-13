@@ -22,6 +22,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<{ shapes: number; links: number; ms: number } | null>(null);
   const [selection, setSelection] = useState<Selection>(null);
+  const [straightEdges, setStraightEdges] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [renderId, setRenderId] = useState(0);
 
@@ -100,6 +101,14 @@ export default function App() {
             <span>{stats.ms.toFixed(0)} ms</span>
           </div>
         ) : null}
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={straightEdges}
+            onChange={(e) => setStraightEdges(e.target.checked)}
+          />
+          直線エッジ
+        </label>
         <button className="btn primary" onClick={() => void apply()} disabled={loading}>
           再描画
         </button>
@@ -126,6 +135,7 @@ export default function App() {
             <TopologyFlow
               key={renderId}
               diagram={diagram}
+              straightEdges={straightEdges}
               onSelectNode={handleNodeSelect}
               onSelectEdge={handleEdgeSelect}
             />

@@ -1,7 +1,7 @@
 import { useContext } from "react";
-import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, useInternalNode } from "@xyflow/react";
 import type { EdgeProps } from "@xyflow/react";
-import { MovedNodesContext } from "./context";
+import { EdgeRenderContext } from "./context";
 
 export interface RoutePoint {
   x: number;
@@ -13,6 +13,33 @@ export interface D2EdgeData extends Record<string, unknown> {
   label: string;
 }
 
+interface NodeBox {
+  internals: { positionAbsolute: { x: number; y: number } };
+  measured?: { width?: number; height?: number };
+  width?: number;
+  height?: number;
+}
+
+function centerOf(node: NodeBox) {
+  const w = node.measured?.width ?? node.width ?? 0;
+  const h = node.measured?.height ?? node.height ?? 0;
+  const p = node.internals.positionAbsolute;
+  return { x: p.x + w / 2, y: p.y + h / 2, w, h };
+}
+
+/** Point where the line from the node's center towards (tx, ty) exits its box. */
+function borderPoint(node: NodeBox, tx: number, ty: number): RoutePoint {
+  const c = centerOf(node);
+  const dx = tx - c.x;
+  const dy = ty - c.y;
+  if (dx === 0 && dy === 0) return { x: c.x, y: c.y };
+  const scale = Math.min(
+    c.w / 2 / Math.abs(dx || Number.EPSILON),
+    c.h / 2 / Math.abs(dy || Number.EPSILON),
+  );
+  return { x: c.x + dx * scale, y: c.y + dy * scale };
+}
+
 export default function D2Edge({
   id,
   source,
@@ -21,38 +48,37 @@ export default function D2Edge({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   markerEnd,
   markerStart,
   data,
   selected,
 }: EdgeProps) {
-  const moved = useContext(MovedNodesContext);
+  const { straightEdges, moved } = useContext(EdgeRenderContext);
   const pts = (data?.route as RoutePoint[] | undefined) ?? [];
   const label = (data?.label as string | undefined) ?? "";
 
-  // Follow the node once either endpoint has been dragged; otherwise show the
-  // exact route D2 computed so the pristine layout looks like the D2 diagram.
-  const follow = moved.has(source) || moved.has(target);
+  const sourceNode = useInternalNode(source) as NodeBox | undefined;
+  const targetNode = useInternalNode(target) as NodeBox | undefined;
+
+  // Straight by default. When straight lines are off, the exact D2 route is
+  // used, except for edges touching a dragged node which still follow it.
+  const useRoute = !straightEdges && !moved.has(source) && !moved.has(target);
 
   let path: string;
   let labelAt: RoutePoint;
-  if (!follow && pts.length >= 2) {
+  if (useRoute && pts.length >= 2) {
     path = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
     labelAt = pts[Math.floor(pts.length / 2)];
+  } else if (sourceNode && targetNode) {
+    const sc = centerOf(sourceNode);
+    const tc = centerOf(targetNode);
+    const from = borderPoint(sourceNode, tc.x, tc.y);
+    const to = borderPoint(targetNode, sc.x, sc.y);
+    path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+    labelAt = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
   } else {
-    const [computed, labelX, labelY] = getSmoothStepPath({
-      sourceX,
-      sourceY,
-      sourcePosition,
-      targetX,
-      targetY,
-      targetPosition,
-      borderRadius: 12,
-    });
-    path = computed;
-    labelAt = { x: labelX, y: labelY };
+    path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+    labelAt = { x: (sourceX + targetX) / 2, y: (sourceY + targetY) / 2 };
   }
 
   return (

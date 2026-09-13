@@ -1,7 +1,13 @@
 import { createContext } from "react";
 
-/**
- * IDs of nodes the user has dragged away from their D2-layout position.
- * Edges touching a moved node re-route live so they keep following it.
- */
-export const MovedNodesContext = createContext<ReadonlySet<string>>(new Set());
+export interface EdgeRenderState {
+  /** Draw every edge as a straight line between node borders. */
+  straightEdges: boolean;
+  /** IDs of nodes the user dragged away from their D2-layout position. */
+  moved: ReadonlySet<string>;
+}
+
+export const EdgeRenderContext = createContext<EdgeRenderState>({
+  straightEdges: true,
+  moved: new Set(),
+});
