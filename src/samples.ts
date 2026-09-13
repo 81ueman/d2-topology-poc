@@ -29,6 +29,160 @@ access.sw-a -> servers.web: 1G
 access.sw-b -> servers.db: 1G
 `;
 
+const WEB3 = `# Web 3層 (LB / AP / DB + レプリカ)
+direction: right
+
+internet: Internet { shape: cloud }
+lb: Load Balancer { shape: hexagon }
+
+web: Web層 {
+  web1: web-1
+  web2: web-2
+}
+
+app: AP層 {
+  app1: app-1
+  app2: app-2
+}
+
+db: DB層 {
+  primary: Primary { shape: cylinder }
+  replica: Replica { shape: cylinder }
+}
+
+internet -> lb: HTTPS
+lb -> web.web1: 443
+lb -> web.web2: 443
+web.web1 -> app.app1
+web.web2 -> app.app2
+app.app1 -> db.primary: 5432
+app.app2 -> db.primary: 5432
+db.primary -> db.replica: レプリケーション
+`;
+
+const HA = `# 冗長化 (エッジ / コア / スイッチの二重化)
+direction: right
+
+isp1: ISP-A { shape: cloud }
+isp2: ISP-B { shape: cloud }
+
+edge1: エッジ-1 { shape: hexagon }
+edge2: エッジ-2 { shape: hexagon }
+core1: コア-1 { shape: hexagon }
+core2: コア-2 { shape: hexagon }
+
+sw1: L2SW-1
+sw2: L2SW-2
+srv: サーバ { shape: cylinder }
+
+isp1 -> edge1: 主回線
+isp2 -> edge2: 副回線
+
+edge1 <-> core1: 10G
+edge2 <-> core2: 10G
+core1 <-> core2: 10G
+
+core1 -> sw1
+core2 -> sw2
+sw1 <-> sw2: スタック
+sw1 -> srv: 1G
+sw2 -> srv: 1G
+`;
+
+const WAN = `# 本社 - 支店間 WAN (拠点間 VPN)
+direction: right
+
+internet: Internet { shape: cloud }
+
+hq: 本社 {
+  edge: エッジルータ { shape: hexagon }
+  fw: ファイアウォール { shape: hexagon }
+  core: コアSW { shape: hexagon }
+  svr: 基幹サーバ { shape: cylinder }
+}
+
+branch1: 支店A {
+  rtr: ルータ
+  sw: L2SW
+  pc: 業務PC { shape: person }
+}
+
+branch2: 支店B {
+  rtr: ルータ
+  sw: L2SW
+  pc: 業務PC { shape: person }
+}
+
+internet -> hq.edge: 光回線 1G
+hq.edge -> hq.fw
+hq.fw -> hq.core
+hq.core -> hq.svr: 1G
+
+internet -> branch1.rtr: IPsec VPN
+internet -> branch2.rtr: IPsec VPN
+branch1.rtr -> branch1.sw
+branch1.sw -> branch1.pc
+branch2.rtr -> branch2.sw
+branch2.sw -> branch2.pc
+`;
+
+const LAN = `# 拠点 LAN (アクセス層)
+direction: right
+
+l3: L3スイッチ { shape: hexagon }
+l2a: L2SW-A
+l2b: L2SW-B
+
+ap1: AP-1 { shape: hexagon }
+ap2: AP-2 { shape: hexagon }
+
+pc1: 業務PC-1 { shape: person }
+pc2: 業務PC-2 { shape: person }
+phone: IP電話
+printer: 複合機 { shape: stored_data }
+tablet: タブレット { shape: person }
+
+l3 -> l2a
+l3 -> l2b
+l2a -> pc1
+l2a -> phone
+l2b -> printer
+l2b -> ap1
+l2b -> ap2
+ap1 -> tablet: 無線LAN
+ap2 -> pc2: 無線LAN
+`;
+
+const HYBRID = `# オンプレ + クラウド (ハイブリッド構成)
+direction: right
+
+users: 利用者 { shape: person }
+internet: Internet { shape: cloud }
+
+onprem: オンプレ {
+  vpn: VPN-GW { shape: hexagon }
+  core: コアSW { shape: hexagon }
+  db: 基幹DB { shape: cylinder }
+}
+
+aws: AWS {
+  igw: Internet-GW { shape: hexagon }
+  alb: ALB { shape: hexagon }
+  ec2: EC2
+  rds: RDS { shape: cylinder }
+}
+
+users -> internet
+internet -> aws.igw: HTTPS
+aws.igw -> aws.alb
+aws.alb -> aws.ec2
+aws.ec2 -> aws.rds: 3306
+
+onprem.vpn <-> aws.igw: 専用線/VPN
+onprem.vpn -> onprem.core
+onprem.core -> onprem.db
+`;
+
 const CLOS = `# Spine-Leaf (CLOS)
 direction: right
 
@@ -63,9 +217,9 @@ leaf2 -> rack2.srv4
 
 /**
  * Generate a rack/ToR/host topology as D2 source.
- * Racks are laid out in a grid (3 x 4 by default) so the result stays roughly
- * square instead of collapsing into one long column.
- * Default: 12 racks x 8 hosts = ~123 shapes, ~110 edges (3-digit scale test).
+ * Racks are laid out in a grid (4 columns) so the result stays roughly square
+ * instead of collapsing into one long column.
+ * Default: 12 racks x 8 hosts = ~125 shapes, ~110 edges (3-digit scale test).
  */
 export function generateLargeSource(racks = 12, hostsPerRack = 8): string {
   const columns = 4;
@@ -101,12 +255,13 @@ export function generateLargeSource(racks = 12, hostsPerRack = 8): string {
 
 export const SAMPLES: Sample[] = [
   { id: "small", label: "3層構成", source: SMALL },
+  { id: "web3", label: "Web3層", source: WEB3 },
+  { id: "ha", label: "冗長化", source: HA },
+  { id: "wan", label: "本社-支店WAN", source: WAN },
+  { id: "lan", label: "拠点LAN", source: LAN },
+  { id: "hybrid", label: "ハイブリッド", source: HYBRID },
   { id: "clos", label: "Spine-Leaf", source: CLOS },
-  {
-    id: "large",
-    label: "生成 123ノード",
-    source: generateLargeSource(),
-  },
+  { id: "large", label: "生成 123ノード", source: generateLargeSource() },
 ];
 
 export const DEFAULT_SOURCE = SMALL;

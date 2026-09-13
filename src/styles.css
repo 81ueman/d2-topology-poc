@@ -181,6 +181,20 @@ body {
   gap: 6px;
 }
 
+.hint {
+  font-size: 11px;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 6px;
+  padding: 5px 8px;
+  line-height: 1.4;
+}
+
+.hint code {
+  color: #bfdbfe;
+}
+
 .source-textarea {
   flex: 1;
   min-height: 280px;

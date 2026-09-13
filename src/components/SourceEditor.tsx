@@ -1,6 +1,8 @@
 import type { KeyboardEvent } from "react";
 import type { LayoutEngine } from "../d2/client";
 import { LAYOUTS } from "../d2/client";
+import type { DirectionSetting } from "../d2/direction";
+import { DIRECTIONS, DIRECTION_LABELS } from "../d2/direction";
 import type { Sample } from "../samples";
 import { SAMPLES } from "../samples";
 
@@ -9,6 +11,8 @@ interface Props {
   onSourceChange: (value: string) => void;
   layout: LayoutEngine;
   onLayoutChange: (value: LayoutEngine) => void;
+  direction: DirectionSetting;
+  onDirectionChange: (value: DirectionSetting) => void;
   onApply: () => void;
   loading: boolean;
   error: string | null;
@@ -20,6 +24,8 @@ export default function SourceEditor({
   onSourceChange,
   layout,
   onLayoutChange,
+  direction,
+  onDirectionChange,
   onApply,
   loading,
   error,
@@ -49,6 +55,26 @@ export default function SourceEditor({
           ))}
         </select>
       </label>
+
+      <label className="field">
+        <span>方向</span>
+        <select
+          value={direction}
+          onChange={(e) => onDirectionChange(e.target.value as DirectionSetting)}
+        >
+          <option value="auto">{DIRECTION_LABELS.auto}</option>
+          {DIRECTIONS.map((d) => (
+            <option key={d} value={d}>
+              {DIRECTION_LABELS[d]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {direction !== "auto" ? (
+        <div className="hint">
+          ソースの <code>direction</code> を「{DIRECTION_LABELS[direction]}」で上書き中
+        </div>
+      ) : null}
 
       <div className="field samples">
         <span>サンプル</span>

@@ -1,7 +1,7 @@
 import { useContext } from "react";
-import { BaseEdge, EdgeLabelRenderer } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath } from "@xyflow/react";
 import type { EdgeProps } from "@xyflow/react";
-import { FreeDragContext } from "./context";
+import { MovedNodesContext } from "./context";
 
 export interface RoutePoint {
   x: number;
@@ -15,27 +15,44 @@ export interface D2EdgeData extends Record<string, unknown> {
 
 export default function D2Edge({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
   targetY,
+  sourcePosition,
+  targetPosition,
   markerEnd,
   markerStart,
   data,
   selected,
 }: EdgeProps) {
-  const freeDrag = useContext(FreeDragContext);
+  const moved = useContext(MovedNodesContext);
   const pts = (data?.route as RoutePoint[] | undefined) ?? [];
   const label = (data?.label as string | undefined) ?? "";
 
+  // Follow the node once either endpoint has been dragged; otherwise show the
+  // exact route D2 computed so the pristine layout looks like the D2 diagram.
+  const follow = moved.has(source) || moved.has(target);
+
   let path: string;
   let labelAt: RoutePoint;
-  if (freeDrag || pts.length < 2) {
-    path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-    labelAt = { x: (sourceX + targetX) / 2, y: (sourceY + targetY) / 2 };
-  } else {
+  if (!follow && pts.length >= 2) {
     path = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
     labelAt = pts[Math.floor(pts.length / 2)];
+  } else {
+    const [computed, labelX, labelY] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 12,
+    });
+    path = computed;
+    labelAt = { x: labelX, y: labelY };
   }
 
   return (

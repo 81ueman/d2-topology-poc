@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -9,13 +9,13 @@ import {
   useEdgesState,
   useNodesState,
 } from "@xyflow/react";
-import type { Edge, EdgeTypes, NodeTypes } from "@xyflow/react";
+import type { Edge, EdgeTypes, NodeChange, NodeTypes } from "@xyflow/react";
 import type { Diagram } from "@d2lang/d2";
 import D2Node from "./D2Node";
 import type { D2NodeData, D2NodeType } from "./D2Node";
 import D2Edge from "./D2Edge";
 import type { RoutePoint } from "./D2Edge";
-import { FreeDragContext } from "./context";
+import { MovedNodesContext } from "./context";
 import { connectionLabel, isContainerId } from "../d2/model";
 import { minimapColor, shapeKind } from "../d2/theme";
 
@@ -65,19 +65,18 @@ function buildEdges(diagram: Diagram, nodeIds: Set<string>): Edge[] {
 
 interface Props {
   diagram: Diagram | null;
-  freeDrag: boolean;
   onSelectNode: (node: D2NodeType | null) => void;
   onSelectEdge: (edge: Edge | null) => void;
 }
 
 export default function TopologyFlow({
   diagram,
-  freeDrag,
   onSelectNode,
   onSelectEdge,
 }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<D2NodeType>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [moved, setMoved] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
     if (!diagram) {
@@ -88,14 +87,32 @@ export default function TopologyFlow({
     const built = buildNodes(diagram);
     setNodes(built);
     setEdges(buildEdges(diagram, new Set(built.map((n) => n.id))));
+    setMoved(new Set());
   }, [diagram, setNodes, setEdges]);
 
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<D2NodeType>[]) => {
+      onNodesChange(changes);
+      const movedIds = changes
+        .filter((c) => c.type === "position")
+        .map((c) => c.id);
+      if (movedIds.length > 0) {
+        setMoved((prev) => {
+          const next = new Set(prev);
+          for (const id of movedIds) next.add(id);
+          return next;
+        });
+      }
+    },
+    [onNodesChange],
+  );
+
   return (
-    <FreeDragContext.Provider value={freeDrag}>
+    <MovedNodesContext.Provider value={moved}>
       <ReactFlow<D2NodeType, Edge>
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -104,7 +121,6 @@ export default function TopologyFlow({
         minZoom={0.05}
         maxZoom={4}
         nodesConnectable={false}
-        nodesDraggable={freeDrag}
         onNodeClick={(_, node) => onSelectNode(node)}
         onEdgeClick={(_, edge) => onSelectEdge(edge)}
         onPaneClick={() => {
@@ -130,6 +146,6 @@ export default function TopologyFlow({
           }}
         />
       </ReactFlow>
-    </FreeDragContext.Provider>
+    </MovedNodesContext.Provider>
   );
 }

@@ -1,7 +1,7 @@
 import { createContext } from "react";
 
 /**
- * When true, edges are drawn as straight live lines between node centers so
- * they follow nodes while dragging. When false, the exact D2 route is used.
+ * IDs of nodes the user has dragged away from their D2-layout position.
+ * Edges touching a moved node re-route live so they keep following it.
  */
-export const FreeDragContext = createContext(false);
+export const MovedNodesContext = createContext<ReadonlySet<string>>(new Set());

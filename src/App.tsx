@@ -3,6 +3,8 @@ import type { Diagram } from "@d2lang/d2";
 import type { Edge } from "@xyflow/react";
 import type { LayoutEngine } from "./d2/client";
 import { compile } from "./d2/client";
+import type { DirectionSetting } from "./d2/direction";
+import { withDirection } from "./d2/direction";
 import TopologyFlow from "./components/TopologyFlow";
 import type { D2NodeType } from "./components/D2Node";
 import DetailPanel from "./components/DetailPanel";
@@ -14,25 +16,28 @@ import { DEFAULT_SOURCE } from "./samples";
 export default function App() {
   const [source, setSource] = useState(DEFAULT_SOURCE);
   const [layout, setLayout] = useState<LayoutEngine>("elk");
+  const [direction, setDirection] = useState<DirectionSetting>("auto");
   const [diagram, setDiagram] = useState<Diagram | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<{ shapes: number; links: number; ms: number } | null>(null);
-  const [freeDrag, setFreeDrag] = useState(false);
   const [selection, setSelection] = useState<Selection>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [renderId, setRenderId] = useState(0);
 
   const sourceRef = useRef(source);
   const layoutRef = useRef(layout);
+  const directionRef = useRef(direction);
   sourceRef.current = source;
   layoutRef.current = layout;
+  directionRef.current = direction;
 
   const apply = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { diagram: next, ms } = await compile(sourceRef.current, layoutRef.current);
+      const src = withDirection(sourceRef.current, directionRef.current);
+      const { diagram: next, ms } = await compile(src, layoutRef.current);
       setDiagram(next);
       setStats({
         shapes: next.shapes?.length ?? 0,
@@ -69,6 +74,12 @@ export default function App() {
     void apply();
   }, [apply]);
 
+  const handleDirectionChange = useCallback((value: DirectionSetting) => {
+    setDirection(value);
+    directionRef.current = value;
+    void apply();
+  }, [apply]);
+
   return (
     <div className="app">
       <header className="toolbar">
@@ -89,14 +100,6 @@ export default function App() {
             <span>{stats.ms.toFixed(0)} ms</span>
           </div>
         ) : null}
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={freeDrag}
-            onChange={(e) => setFreeDrag(e.target.checked)}
-          />
-          ノードをドラッグ
-        </label>
         <button className="btn primary" onClick={() => void apply()} disabled={loading}>
           再描画
         </button>
@@ -109,6 +112,8 @@ export default function App() {
             onSourceChange={setSource}
             layout={layout}
             onLayoutChange={setLayout}
+            direction={direction}
+            onDirectionChange={handleDirectionChange}
             onApply={() => void apply()}
             loading={loading}
             error={error}
@@ -121,7 +126,6 @@ export default function App() {
             <TopologyFlow
               key={renderId}
               diagram={diagram}
-              freeDrag={freeDrag}
               onSelectNode={handleNodeSelect}
               onSelectEdge={handleEdgeSelect}
             />
