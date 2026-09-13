@@ -11,3 +11,13 @@ export const EdgeRenderContext = createContext<EdgeRenderState>({
   straightEdges: true,
   moved: new Set(),
 });
+
+export interface ContainerState {
+  collapsed: ReadonlySet<string>;
+  toggle: (id: string) => void;
+}
+
+export const ContainerContext = createContext<ContainerState>({
+  collapsed: new Set(),
+  toggle: () => {},
+});

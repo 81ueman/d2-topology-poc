@@ -81,6 +81,12 @@ export default function App() {
     void apply();
   }, [apply]);
 
+  const handleLayoutChange = useCallback((value: LayoutEngine) => {
+    setLayout(value);
+    layoutRef.current = value;
+    void apply();
+  }, [apply]);
+
   return (
     <div className="app">
       <header className="toolbar">
@@ -120,7 +126,7 @@ export default function App() {
             source={source}
             onSourceChange={setSource}
             layout={layout}
-            onLayoutChange={setLayout}
+            onLayoutChange={handleLayoutChange}
             direction={direction}
             onDirectionChange={handleDirectionChange}
             onApply={() => void apply()}

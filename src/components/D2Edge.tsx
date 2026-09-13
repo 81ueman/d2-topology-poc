@@ -69,6 +69,14 @@ export default function D2Edge({
   if (useRoute && pts.length >= 2) {
     path = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
     labelAt = pts[Math.floor(pts.length / 2)];
+  } else if (source === target && sourceNode) {
+    // Straight-line mode would collapse a self-loop to zero length; draw a loop.
+    const c = centerOf(sourceNode);
+    const left = { x: c.x - c.w * 0.25, y: c.y - c.h / 2 };
+    const right = { x: c.x + c.w * 0.25, y: c.y - c.h / 2 };
+    const top = c.y - c.h * 1.1;
+    path = `M ${left.x} ${left.y} C ${left.x} ${top}, ${right.x} ${top}, ${right.x} ${right.y}`;
+    labelAt = { x: c.x, y: c.y - c.h * 0.95 };
   } else if (sourceNode && targetNode) {
     const sc = centerOf(sourceNode);
     const tc = centerOf(targetNode);

@@ -277,6 +277,7 @@ body {
 
 /* ---------- nodes ---------- */
 .d2-node {
+  position: relative;
   width: 100%;
   height: 100%;
   font-size: 12px;
@@ -325,6 +326,42 @@ body {
 .d2-node.selected .node-body,
 .d2-node.selected .hex-inner {
   box-shadow: 0 0 0 2px #93c5fd, 0 0 20px rgba(59, 130, 246, 0.45);
+}
+
+/* ---------- container collapse ---------- */
+.collapse-btn {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 7px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.collapse-btn:hover {
+  background: #334155;
+  border-color: #94a3b8;
+}
+
+.collapse-count {
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.d2-node.is-collapsed .node-body {
+  border-style: solid;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px #60a5fa, 0 0 16px rgba(59, 130, 246, 0.25);
 }
 
 .d2-node .hex {

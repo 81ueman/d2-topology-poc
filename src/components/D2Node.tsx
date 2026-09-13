@@ -1,19 +1,23 @@
-import { memo } from "react";
+import { memo, useContext } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
 import type { Shape } from "@d2lang/d2";
 import { shapeKind, shapeTheme } from "../d2/theme";
 import { shapeLabel } from "../d2/model";
+import { ContainerContext } from "./context";
 
 export interface D2NodeData extends Record<string, unknown> {
   shape: Shape;
   isContainer: boolean;
+  childCount: number;
 }
 
 export type D2NodeType = Node<D2NodeData, "d2node">;
 
 function D2NodeImpl({ data, selected }: NodeProps<D2NodeType>) {
-  const { shape, isContainer } = data;
+  const { shape, isContainer, childCount } = data;
+  const { collapsed, toggle } = useContext(ContainerContext);
+  const isCollapsed = collapsed.has(shape.id);
   const kind = shapeKind(shape.type, isContainer);
   const theme = shapeTheme(kind);
   const border = selected ? "#93c5fd" : theme.stroke;
@@ -23,6 +27,7 @@ function D2NodeImpl({ data, selected }: NodeProps<D2NodeType>) {
     "d2-node",
     `kind-${kind}`,
     isContainer ? "is-container" : "",
+    isCollapsed ? "is-collapsed" : "",
     selected ? "selected" : "",
   ]
     .filter(Boolean)
@@ -44,6 +49,22 @@ function D2NodeImpl({ data, selected }: NodeProps<D2NodeType>) {
           {label}
         </div>
       )}
+
+      {isContainer ? (
+        <button
+          className="collapse-btn"
+          title={isCollapsed ? "展開する" : "折りたたむ"}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle(shape.id);
+          }}
+        >
+          {isCollapsed ? "＋" : "−"}
+          <span className="collapse-count">{childCount}</span>
+        </button>
+      ) : null}
+
       <Handle type="target" position={Position.Left} className="d2-handle" />
       <Handle type="source" position={Position.Right} className="d2-handle" />
     </div>
